@@ -300,7 +300,7 @@ if analysis_mode == "Fractional Ownership":
     res_frac = calculate_costs_fractional(filtered_frac, avg_flight_time, frac_annual_usage, depreciation_pct_new, depreciation_pct_used, tax_rate, dep_term, cpi_rate)
 
     st.subheader("Single Scenario Estimates (Year 1 Basis)")
-    display_cols_frac = ['Company', 'type', 'Cabin type', 'Program Type', 'Fractional Hours', 'Share %', 'Purchase Price', 
+    display_cols_frac = ['Company', 'type', 'Aircraft Type', 'Share %', 'Purchase Price', 
                          'Hourly Rate', 'Depreciation Hourly', 'Effective Hourly Rate', 'Annual Cost', 'Total Lifetime Cost']
     
     styled_frac_df = res_frac[display_cols_frac].style.apply(highlight_flyexclusive, axis=1).format({
@@ -360,8 +360,7 @@ elif analysis_mode == "Jet Club / Card Programs":
     res_jc = calculate_costs_jc(filtered_jc, avg_flight_time, jc_annual_usage, tax_rate, dep_term, cpi_rate)
 
     st.subheader("Single Scenario Estimates (Year 1 Basis)")
-    display_cols_jc = ['Program Name', 'Company', 'Cabin type', 'Mins', 'Daily', 'Hourly', 
-                       'Fuel Surcharges', 'Annual Membership Fees', 'Effective Hourly Rate', 'Annual Cost']
+    display_cols_jc = ['Program Name', 'Company', 'Cabin type', 'Effective Hourly Rate', 'Annual Cost']
     
     styled_jc_df = res_jc[display_cols_jc].sort_values(by='Effective Hourly Rate').style.apply(highlight_flyexclusive, axis=1).format({
         'Mins': '{:.1f}', 'Daily': '${:,.0f}', 'Hourly': '${:,.0f}', 
@@ -497,3 +496,4 @@ elif analysis_mode == "Compare: Fractional vs Jet Club":
             fig_sens.update_layout(hovermode="x unified")
 
             st.plotly_chart(fig_sens, use_container_width=True)
+
