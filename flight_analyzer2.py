@@ -195,7 +195,7 @@ with st.sidebar:
         if not available_hours: available_hours = [50, 75, 100, 150, 200]
         frac_annual_usage = st.selectbox("Annual Usage (Fractional Hours Tier)", available_hours, index=0)
         depreciation_pct_new = st.slider("Depreciation - New Aircraft (%)", 0, 100, 20)
-        depreciation_pct_used = st.slider("Depreciation - Used Aircraft (%)", 0, 100, 30)
+        depreciation_pct_used = st.slider("Depreciation - Secondary Aircraft (%)", 0, 100, 30)
     
     elif analysis_mode == "Jet Club / Card Programs":
         st.header("2. Jet Club Inputs")
@@ -495,4 +495,5 @@ elif analysis_mode == "Compare: Fractional vs Jet Club":
             fig_sens = px.line(sens_df, x='Flight Time', y='Effective Hourly Rate', color='Program', symbol='Model',
                                markers=True, labels={'Effective Hourly Rate': 'Rate ($)', 'Flight Time': 'Trip Duration (Hours)'})
             fig_sens.update_layout(hovermode="x unified")
+
             st.plotly_chart(fig_sens, use_container_width=True)
