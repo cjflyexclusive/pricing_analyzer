@@ -1,12 +1,12 @@
 Company,type,Cabin type,Aircraft Type,Program Type,Contract Type,Deposit Size,Day Rate,Hourly Rate,Interchange,Interchange To,Annual Membership Fees,Share Share Size,Share %,Fractional Hours,Mangement Fee,Amoritized management fee,Purchase Price
-flyExclusive,used,Light,CJ3+,Frax,,,5000,3400,1,CJ3+,,1,0.0625,50,0,0,595000
-flyExclusive,used,Mid,XLS,Frax,,,6900,3800,1,XLS,,1,0.0625,50,0,0,625000
-flyExclusive,used,Super Mid,Sovereign,Frax,,,7000,5100,1,Sovereign,,1,0.0625,50,0,0,662000
-flyExclusive,used,Premium Super Mid,Challenger,Frax,,,9000,7000,1,Challenger,,1,0.0625,50,0,0,1200000
-flyExclusive,used,Light,CJ3+,Frax,,,5000,3400,1,CJ3+,,2,0.125,100,0,0,1190000
-flyExclusive,used,Mid,XLS,Frax,,,6900,3800,1,XLS,,2,0.125,100,0,0,1250000
-flyExclusive,used,Super Mid,Sovereign,Frax,,,7000,5100,1,Sovereign,,2,0.125,100,0,0,1324000
-flyExclusive,used,Premium Super Mid,Challenger,Frax,,,9000,7000,1,Challenger,,2,0.125,100,0,0,2400000
+flyExclusive,Secondary,Light,CJ3+,Frax,,,5000,3400,1,CJ3+,,1,0.0625,50,0,0,595000
+flyExclusive,Secondary,Mid,XLS,Frax,,,6900,3800,1,XLS,,1,0.0625,50,0,0,625000
+flyExclusive,Secondary,Super Mid,Sovereign,Frax,,,7000,5100,1,Sovereign,,1,0.0625,50,0,0,662000
+flyExclusive,Secondary,Premium Super Mid,Challenger,Frax,,,9000,7000,1,Challenger,,1,0.0625,50,0,0,1200000
+flyExclusive,Secondary,Light,CJ3+,Frax,,,5000,3400,1,CJ3+,,2,0.125,100,0,0,1190000
+flyExclusive,Secondary,Mid,XLS,Frax,,,6900,3800,1,XLS,,2,0.125,100,0,0,1250000
+flyExclusive,Secondary,Super Mid,Sovereign,Frax,,,7000,5100,1,Sovereign,,2,0.125,100,0,0,1324000
+flyExclusive,Secondary,Premium Super Mid,Challenger,Frax,,,9000,7000,1,Challenger,,2,0.125,100,0,0,2400000
 Flexjet,New,Light,Phenom 300,Frax,,,,3872,1,,,1,0.0625,50,166584,3331.68,781250
 Flexjet,New,Mid,Praetor 500,Frax,,,,5428,1,,,2,0.125,100,363960,3639.6,2718750
 Flexjet,New,Mid,Praetor 500,Frax,,,,5428,1,,,1,0.0625,50,219264,4385.28,1359375
