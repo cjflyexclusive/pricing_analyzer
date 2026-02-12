@@ -219,7 +219,7 @@ with st.sidebar:
         with st.form("forecast_form"):
             st.subheader("Create New Tier")
             f_name = st.text_input("Program Name", value="Forecast JC Tier")
-            f_cabin = st.selectbox("Cabin Type", options=all_cabins[1:]) # Skip "All"
+            f_cabin = st.selectbox("Cabin Type", options=all_cabins) # Skip "All"
             
             col1, col2 = st.columns(2)
             f_hourly = col1.number_input("Hourly Rate ($)", min_value=0.0, value=4000.0, step=100.0)
@@ -496,6 +496,7 @@ elif analysis_mode == "Compare: Fractional vs Jet Club":
             fig_sens.update_layout(hovermode="x unified")
 
             st.plotly_chart(fig_sens, use_container_width=True)
+
 
 
 
