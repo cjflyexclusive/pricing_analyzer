@@ -8,13 +8,15 @@ flyExclusive,Secondary,Mid,XLS,Frax,,,6900,3800,1,XLS,,2,0.125,100,0,0,1250000
 flyExclusive,Secondary,Super Mid,Sovereign,Frax,,,7000,5100,1,Sovereign,,2,0.125,100,0,0,1324000
 flyExclusive,Secondary,Premium Super Mid,Challenger,Frax,,,9000,7000,1,Challenger,,2,0.125,100,0,0,2400000
 Flexjet,New,Light,Phenom 300,Frax,,,,3872,1,,,1,0.0625,50,166584,3331.68,781250
+Flexjet,New,Light,Phenom 300,Frax,,,,3872,1,,,2,0.125,100,166584,3331.68,1562500
 Flexjet,New,Mid,Praetor 500,Frax,,,,5428,1,,,2,0.125,100,363960,3639.6,2718750
 Flexjet,New,Mid,Praetor 500,Frax,,,,5428,1,,,1,0.0625,50,219264,4385.28,1359375
 Flexjet,New,Super Mid,Praetor 600,Frax,,,,6431,1,,,1,0.0625,50,274356,5487.12,1703125
 Flexjet,New,Super Mid,Praetor 600,Frax,,,,6431,1,,,2,0.125,100,466080,4660.8,3406250
 Flexjet,New,Premium Super Mid,Challenger 3500,Frax,,,,6431,1,,,1,0.0625,50,274356,5487.12,1640625
-Magellan Jets,New,Light,Phenom 300,Frax,,,,3879,1,,,1,0.0625,50,167640,3352.8,834375
+NetJets,New,Light,Phenom 300,Frax,,,,3879,1,,,1,0.0625,50,268248,2682.48,834375
 NetJets,New,Light,Phenom 300,Frax,,,,3879,1,,,2,0.125,100,268248,2682.48,1668750
+NetJets,New,Mid,Praetor 500,Frax,,,,5928,1,,,2,0.125,100,259320,5186.4,2918750
 NetJets,New,Mid,Praetor 500,Frax,,,,5928,1,,,1,0.0625,50,259320,5186.4,1459375
 NetJets,New,Mid,Ascend,Frax,,,,4334,1,,,1,0.0625,50,208248,4164.96,1062500
 NetJets,New,Mid,Ascend,Frax,,,,4334,1,,,2,0.125,100,347088,3470.88,2125000
