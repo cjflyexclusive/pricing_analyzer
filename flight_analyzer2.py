@@ -393,7 +393,7 @@ if not master_df.empty:
         fig_life.update_layout(title="Total Ownership Cost over Term", xaxis_tickformat='$,.0f', height=max(500, len(df_life)*35), yaxis=dict(autorange='reversed'))
         st.plotly_chart(fig_life, use_container_width=True)
 
-    cabin_caps, trip_times = {'Light': 3.5, 'Mid': 4.0, 'Super Mid': 8.0, 'Heavy': 8.0}, [round(x, 1) for x in np.arange(1.0, 8.1, 0.1)]
+    cabin_caps, trip_times = {'Light': 3.5, 'Mid': 4.0, 'Super Mid': 6.0, 'Heavy': 6.0}, [round(x, 1) for x in np.arange(1.0, 8.1, 0.1)]
     sens_rows = []
     for _, r in master_df.iterrows():
         sh = r.get('Fractional Hours', 0) if r.get('Fractional Hours', 0) > 0 else 50
