@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
+import datetime
 
 # ─── 1. CONFIG & BRANDING ────────────────────────────────────────────────────
 st.set_page_config(page_title="flyExclusive Pricing Tool", layout="wide")
@@ -142,7 +143,7 @@ def calculate_master_table(df_frac, df_jc, avg_flight_time, annual_hours_slider,
     frac_res['Annual Amort Mgmt']   = annual_hours_slider * frac_res['Amortized Management Fee']
     frac_res['Annual Fixed Spend']  = frac_res['Annual Membership Fees'] + frac_res['Management Fee']
     
-    # Ownership Depreciation logic (Locked to Share Size, Burdened on usage)
+    # Ownership Depreciation logic
     dep_pct = frac_res['type'].apply(lambda x: depreciation_pct_new if str(x).lower() == 'new' else depreciation_pct_used)
     frac_res['Total Annual Share Dep'] = (frac_res['Purchase Price'] * (dep_pct / 100)) / dep_term
     frac_res['Annual Depreciation'] = frac_res['Total Annual Share Dep']
@@ -214,7 +215,6 @@ def calculate_master_table(df_frac, df_jc, avg_flight_time, annual_hours_slider,
     jc_res['Tax Cost']              = jc_res['Annual Tax']
     jc_res['Depreciation Cost']     = 0.0
     
-    # Hourly Breakdown for Jet Club
     jc_res['Average Trip Cost (Hrly)'] = (jc_res['Annual Hourly Spend'] + jc_res['Annual Day Spend']) / annual_hours_slider
     jc_res['FET (Hrly)']               = jc_res['Annual Tax'] / annual_hours_slider
     jc_res['Membership & Fees (Hrly)'] = jc_res['Annual Fixed Spend'] / annual_hours_slider
@@ -245,7 +245,6 @@ if df_frac.empty or df_jc.empty: st.stop()
 all_cabins     = sorted(set(df_frac['Cabin type'].unique()) | set(df_jc['Cabin type'].unique()))
 all_companies  = sorted(set(df_frac['Company'].unique())    | set(df_jc['Company'].unique()))
 
-# Initialize Session State for Manual Entries
 if 'custom_frac_forecast' not in st.session_state:
     st.session_state['custom_frac_forecast'] = pd.DataFrame(columns=['Aircraft Type', 'Cabin type', 'type', 'Purchase Price', 'Hourly Rate', 'Day Rate', 'Management Fee', 'Amortized Management Fee', 'Annual Membership Fees', 'Fractional Hours'])
 if 'custom_jc_forecast' not in st.session_state:
@@ -256,7 +255,7 @@ with st.sidebar:
     st.image("https://22283886.fs1.hubspotusercontent-na1.net/hubfs/22283886/Caravan%20Drip%20Images/FLY_MasterLogo_CMYK_PMS541.png", use_container_width=True)
     st.markdown("---")
     st.header("1. Usage Inputs")
-    annual_hours = st.slider("Annual Usage (Hours)", 10, 500, 50, 5)
+    annual_hours = st.number_input("Annual Usage (Hours)", min_value=1, value=50, step=1)
     calc_basis   = st.radio("Trip Calculator", ["Average Flight Time", "Total Trips per Year"])
     if calc_basis == "Average Flight Time":
         avg_flight_time = st.number_input("Average Flight Time (Hours)", 0.5, value=2.0, step=0.1)
@@ -297,16 +296,17 @@ with st.sidebar:
 
     with st.expander("Add Jet Club Program"):
         with st.form("jc_form"):
-            jf_name   = st.text_input("Name", "Forecast JC")
-            jf_cabin  = st.selectbox("Cabin", all_cabins, key='jf_cab')
-            jf_hourly = st.number_input("Hourly Rate", 4000)
-            jf_daily  = st.number_input("Daily Rate", 0)
-            jf_mins   = st.number_input("Daily Min", 1.2)
+            jf_name       = st.text_input("Name", "Forecast JC")
+            jf_cabin      = st.selectbox("Cabin", all_cabins, key='jf_cab')
+            jf_hourly     = st.number_input("Hourly Rate", 4000)
+            jf_daily      = st.number_input("Daily Rate", 0)
+            jf_mins       = st.number_input("Daily Min", min_value=0.0, value=1.2, step=0.1)
+            jf_annual_mem = st.number_input("Annual Membership Fee ($)", min_value=0, value=0, step=1000)
             if st.form_submit_button("Add to Analysis"):
                 new_row = pd.DataFrame([{
                     'Program Name': jf_name, 'Cabin type': jf_cabin,
                     'Hourly': jf_hourly, 'Daily': jf_daily, 'Mins': jf_mins,
-                    'Fuel Surcharges': 0, 'Annual Membership Fees': 0,
+                    'Fuel Surcharges': 0, 'Annual Membership Fees': jf_annual_mem,
                     'Company': 'flyExclusive (Forecast)'
                 }])
                 st.session_state['custom_jc_forecast'] = pd.concat([st.session_state['custom_jc_forecast'], new_row], ignore_index=True)
@@ -324,7 +324,10 @@ df_jc_combined = pd.concat([df_jc, st.session_state['custom_jc_forecast']], igno
 st.title("flyExclusive Pricing Tool")
 all_aircraft = sorted(set(df_frac_combined['Aircraft Type'].fillna('Generic').unique()) | set(df_jc_combined['Cabin type'].unique()))
 c1, c2, c3, c4 = st.columns(4)
-sel_cabin, sel_company, sel_type, sel_aircraft = c1.multiselect("Filter Cabin Type", all_cabins), c2.multiselect("Filter Company", all_companies), c3.multiselect("Filter Program Category", ["Fractional", "Jet Club"]), c4.multiselect("Filter Aircraft Type", all_aircraft)
+sel_cabin = c1.multiselect("Filter Cabin Type", all_cabins)
+sel_company = c2.multiselect("Filter Company", all_companies)
+sel_type = c3.multiselect("Filter Program Category", ["Fractional", "Jet Club"])
+sel_aircraft = c4.multiselect("Filter Aircraft Type", all_aircraft)
 target_tier = get_target_tier(annual_hours, sorted([t for t in df_frac_combined['Fractional Hours'].unique() if t > 0]))
 
 if sel_cabin: df_frac_combined, df_jc_combined = df_frac_combined[df_frac_combined['Cabin type'].isin(sel_cabin)], df_jc_combined[df_jc_combined['Cabin type'].isin(sel_cabin)]
@@ -360,8 +363,14 @@ if not master_df.empty:
 # ─── 8. DASHBOARD TABS ────────────────────────────────────────────────────────
 if not master_df.empty:
     master_df['Is flyExclusive'] = master_df['Company'].apply(is_fe)
-    grouped = master_df.groupby(['Company', 'Cabin type', 'Program Category', 'Is flyExclusive'], as_index=False)[['Annual Cost', 'Total Lifetime Cost', 'Effective Hourly Rate', 'Variable Cost', 'Fixed Cost', 'Tax Cost', 'Depreciation Cost']].mean()
-    grouped['Bar Label'] = grouped['Company'] + ' — ' + grouped['Cabin type'] + ' (' + grouped['Program Category'] + ')'
+    
+    comp_grouped = master_df[~master_df['Is flyExclusive']].groupby(['Company', 'Cabin type', 'Program Category', 'Is flyExclusive'], as_index=False)[['Annual Cost', 'Total Lifetime Cost', 'Effective Hourly Rate', 'Variable Cost', 'Fixed Cost', 'Tax Cost', 'Depreciation Cost']].mean()
+    comp_grouped['Bar Label'] = comp_grouped['Company'] + ' — ' + comp_grouped['Cabin type'] + ' (' + comp_grouped['Program Category'] + ')'
+    
+    fe_grouped = master_df[master_df['Is flyExclusive']].groupby(['Company', 'Display Name', 'Cabin type', 'Program Category', 'Is flyExclusive'], as_index=False)[['Annual Cost', 'Total Lifetime Cost', 'Effective Hourly Rate', 'Variable Cost', 'Fixed Cost', 'Tax Cost', 'Depreciation Cost']].mean()
+    fe_grouped['Bar Label'] = fe_grouped['Company'] + ' — ' + fe_grouped['Display Name']
+    
+    grouped = pd.concat([fe_grouped, comp_grouped], ignore_index=True)
     
     t1, t2, t3 = st.tabs(["Cost Breakdown", f"{int(dep_term)}-Year Lifetime Cost", "Effective Hourly (Heatmap)"])
     
@@ -372,16 +381,12 @@ if not master_df.empty:
             fig_stack.add_trace(go.Bar(name=lbl, y=df_stack['Bar Label'], x=df_stack[c], marker_color=color, orientation='h'))
         
         fig_stack.add_trace(go.Scatter(
-            y=df_stack['Bar Label'],
-            x=df_stack['Annual Cost'],
-            mode='text',
+            y=df_stack['Bar Label'], x=df_stack['Annual Cost'], mode='text',
             text=df_stack['Annual Cost'].apply(lambda x: f" ${x:,.0f}"),
-            textposition='middle right',
-            showlegend=False,
-            hoverinfo='skip'
+            textposition='middle right', showlegend=False, hoverinfo='skip'
         ))
 
-        fig_stack.update_layout(barmode='stack', height=max(500, len(df_stack)*35), yaxis=dict(autorange='reversed'), xaxis_tickformat='$,.0f', margin=dict(r=100))
+        fig_stack.update_layout(barmode='stack', height=max(500, len(df_stack)*35), yaxis=dict(autorange='reversed', automargin=True), xaxis_tickformat='$,.0f', margin=dict(l=10, r=100, t=40, b=20))
         st.plotly_chart(fig_stack, use_container_width=True)
 
     with t2:
@@ -390,10 +395,11 @@ if not master_df.empty:
         for _, row in df_life.iterrows():
             color = BRAND_NAVY if row['Is flyExclusive'] else BRAND_LIGHT_BLUE
             fig_life.add_trace(go.Bar(y=[row['Bar Label']], x=[row['Total Lifetime Cost']], marker_color=color, orientation='h'))
-        fig_life.update_layout(title="Total Ownership Cost over Term", xaxis_tickformat='$,.0f', height=max(500, len(df_life)*35), yaxis=dict(autorange='reversed'))
+        
+        fig_life.update_layout(title="Total Ownership Cost over Term", xaxis_tickformat='$,.0f', height=max(500, len(df_life)*35), yaxis=dict(autorange='reversed', automargin=True), margin=dict(l=10, r=50, t=40, b=20))
         st.plotly_chart(fig_life, use_container_width=True)
 
-    cabin_caps, trip_times = {'Light': 3.5, 'Mid': 4.0, 'Super Mid': 6.0, 'Heavy': 6.0}, [round(x, 1) for x in np.arange(1.0, 8.1, 0.1)]
+    cabin_caps, trip_times = {'Light': 3.0, 'Mid': 4.0, 'Super Mid': 5.0, 'Premium Super Mid': 6.0, 'Heavy': 6.0}, [round(x, 1) for x in np.arange(1.0, 8.1, 0.1)]
     sens_rows = []
     for _, r in master_df.iterrows():
         sh = r.get('Fractional Hours', 0) if r.get('Fractional Hours', 0) > 0 else 50
@@ -407,26 +413,49 @@ if not master_df.empty:
                 btt = max(r['Mins'], tt)
                 hs, ds = trps*btt*r['Total Hourly Rate'], trps*r['Daily']
                 tot = hs + ds + r['Fixed Cost'] + ((hs+ds)*tax_rate)
-            sens_rows.append({'Label': f"{r['Company']} - {r['Cabin type']} ({r['Program Category']})", 'Time': tt, 'EHR': round(tot/sh)})
+            
+            # --- LABEL LOGIC FOR HEATMAP ---
+            # flyExclusive gets individual names, others get averaged by Cabin/Program
+            if is_fe(r['Company']):
+                lbl = f"{r['Company']} — {r['Display Name']}"
+            else:
+                lbl = f"{r['Company']} — {r['Cabin type']} ({r['Program Category']})"
+                
+            sens_rows.append({'Label': lbl, 'Time': tt, 'EHR': round(tot/sh)})
+            
     sens_df = pd.DataFrame(sens_rows)
 
     with t3:
         if not sens_df.empty:
-            pivot = sens_df.pivot_table(index='Label', columns='Time', values='EHR')
-            fig_heat = go.Figure(go.Heatmap(z=pivot.values, x=pivot.columns, y=pivot.index, text=pivot.values, texttemplate="$%{z:,.0f}", colorscale='Blues', colorbar=dict(tickformat='$,.0f')))
-            fig_heat.update_layout(title="Effective Hourly Rates by Flight Time", height=max(400, len(pivot)*35), yaxis=dict(autorange='reversed'))
+            pivot = sens_df.pivot_table(index='Label', columns='Time', values='EHR', aggfunc='mean')
+            fig_heat = go.Figure(go.Heatmap(z=pivot.values, x=pivot.columns, y=pivot.index, texttemplate="$%{z:,.0f}", colorscale='Blues', colorbar=dict(tickformat='$,.0f'), hovertemplate="<b>%{y}</b><br>Time: %{x} hrs<br>Rate: $%{z:,.0f}<extra></extra>"))
+            fig_heat.update_layout(title="Effective Hourly Rates by Flight Time", height=max(400, len(pivot)*35), yaxis=dict(autorange='reversed', automargin=True), margin=dict(l=10, r=20, t=40, b=20))
             st.plotly_chart(fig_heat, use_container_width=True)
 
     st.subheader("Unified Program Comparison")
     sorted_df = master_df.sort_values(['Is flyExclusive', 'Effective Hourly Rate'], ascending=[False, True]).copy()
     sorted_df['Aircraft Type'] = np.where(sorted_df['type'] == 'Jet Card', '—', sorted_df['Aircraft Type'])
     currency_cols = ['Average Trip Cost (Hrly)', 'FET (Hrly)', 'Depreciation (Hrly)', 'Membership & Fees (Hrly)', 'Effective Hourly Rate', 'Annual Cost', 'Total Lifetime Cost']
-    render_df = sorted_df[['Company', 'Display Name', 'Aircraft Type', 'type'] + currency_cols]
+    render_df = sorted_df[['Company', 'Display Name', 'Aircraft Type', 'Program Category'] + currency_cols]
     st.dataframe(render_df.style.apply(lambda r: [f'background-color: {BRAND_LIGHT_GREY}; font-weight: bold;' if is_fe(r['Company']) else '']*len(r), axis=1).format({c: '${:,.0f}' for c in currency_cols}), use_container_width=True)
 
-    with st.expander("Configure Report"):
-        rep_title = st.text_input("Report Title", "Competitive Analysis Report")
-        if st.button("Generate Report"):
+    # ─── HTML REPORT GENERATOR ───────────────────────────────────────────────
+    with st.expander("Configure & Download HTML Report"):
+        
+        # --- DYNAMIC TITLE LOGIC ---
+        approx_trips = int(round(annual_hours / avg_flight_time))
+        dyn_title = f"Competitive Analysis: {annual_hours} Hrs | {avg_flight_time:.1f} Hr Avg Flight | ~{approx_trips} Trips"
+        if sel_cabin: dyn_title += f" | {' & '.join(sel_cabin)}"
+        if sel_type: dyn_title += f" | {' & '.join(sel_type)}"
+        
+        col_r1, col_r2 = st.columns(2)
+        rep_title = col_r1.text_input("Report Title", dyn_title)
+        rep_date = col_r2.date_input("Report Date", datetime.date.today())
+        rep_presented_for = col_r1.text_input("Presented For (Optional)")
+        rep_created_by = col_r2.text_input("Created By (Optional)")
+        rep_description = st.text_area("Report Description / Key Findings (Optional)", height=100)
+        
+        if st.button("Generate Professional Report"):
             rep_tbl = render_df.copy()
             for c in currency_cols: rep_tbl[c] = rep_tbl[c].apply(lambda x: f"${x:,.0f}" if pd.notnull(x) else '—')
             rep_tbl_html = rep_tbl.to_html(index=False, classes='summary-table', border=0)
@@ -434,26 +463,70 @@ if not master_df.empty:
             fig_stack_rep = go.Figure()
             for c, color, lbl in [('Variable Cost', '#1565C0', 'Variable'), ('Fixed Cost', BRAND_LIGHT_BLUE, 'Fixed'), ('Tax Cost', BRAND_AMBER, 'FET Tax'), ('Depreciation Cost', BRAND_DARK_GREY, 'Depreciation')]:
                 fig_stack_rep.add_trace(go.Bar(name=lbl, y=df_stack['Bar Label'], x=df_stack[c], marker_color=color, orientation='h'))
-            
             fig_stack_rep.add_trace(go.Scatter(y=df_stack['Bar Label'], x=df_stack['Annual Cost'], mode='text', text=df_stack['Annual Cost'].apply(lambda x: f" ${x:,.0f}"), textposition='middle right', showlegend=False))
-            fig_stack_rep.update_layout(barmode='stack', height=max(400, len(df_stack)*30), yaxis=dict(autorange='reversed'), xaxis_tickformat='$,.0f')
+            fig_stack_rep.update_layout(barmode='stack', height=max(500, len(df_stack)*40), yaxis=dict(autorange='reversed', automargin=True), xaxis_tickformat='$,.0f', margin=dict(l=10, r=80, t=50, b=50))
             
-            pivot_rep = sens_df.pivot_table(index='Label', columns='Time', values='EHR')
-            fig_heat_rep = go.Figure(go.Heatmap(z=pivot_rep.values, x=pivot_rep.columns, y=pivot_rep.index, colorscale='Blues', text=pivot_rep.values, texttemplate="$%{z:,.0f}"))
-            fig_heat_rep.update_layout(title="Effective Hourly Rates", height=max(400, len(pivot_rep)*30), yaxis=dict(autorange='reversed'))
+            pivot_rep = sens_df.pivot_table(index='Label', columns='Time', values='EHR', aggfunc='mean')
+            fig_heat_rep = go.Figure(go.Heatmap(z=pivot_rep.values, x=pivot_rep.columns, y=pivot_rep.index, colorscale='Blues', colorbar=dict(tickformat='$,.0f'), hovertemplate="<b>%{y}</b><br>Time: %{x} hrs<br>Rate: $%{z:,.0f}<extra></extra>"))
+            fig_heat_rep.update_layout(title="Effective Hourly Rates", height=max(500, len(pivot_rep)*40), yaxis=dict(autorange='reversed', automargin=True), margin=dict(l=10, r=20, t=50, b=50), xaxis=dict(title="Flight Time (Hours)"))
             
-            html = f"""<!DOCTYPE html><html><head><script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script><style>
-                body {{ font-family: sans-serif; padding: 40px; background: #f4f6f9; }}
-                .card {{ background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }}
-                h1, h2 {{ color: {BRAND_NAVY}; }}
-                .summary-table {{ width: 100%; border-collapse: collapse; font-size: 11px; }}
-                .summary-table th {{ background: {BRAND_NAVY}; color: white; padding: 8px; text-align: left; }}
-                .summary-table td {{ padding: 8px; border-bottom: 1px solid #eee; }}
-            </style></head><body>
-                <h1>{rep_title}</h1>
-                <div class="card"><h2>Comparison Table</h2>{rep_tbl_html}</div>
-                <div class="card"><h2>Annual Cost Breakdown</h2>{pio.to_html(fig_stack_rep, full_html=False)}</div>
-                <div class="card"><h2>Effective Hourly Rates</h2>{pio.to_html(fig_heat_rep, full_html=False)}</div>
-            </body></html>"""
+            desc_html = rep_description.replace('\n', '<br>') if rep_description else ""
+            
+            stack_html_div = pio.to_html(fig_stack_rep, full_html=False, include_plotlyjs='cdn')
+            heat_html_div = pio.to_html(fig_heat_rep, full_html=False, include_plotlyjs=False)
+            
+            html = f"""<!DOCTYPE html>
+            <html>
+            <head>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+                <style>
+                    body {{ font-family: 'Inter', sans-serif; padding: 40px; background: #f4f6f9; color: #333; }}
+                    .report-container {{ max-width: 1200px; margin: 0 auto; }}
+                    .header {{ text-align: center; margin-bottom: 40px; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }}
+                    .header img {{ max-width: 250px; margin-bottom: 20px; }}
+                    .header h1 {{ color: {BRAND_NAVY}; margin-bottom: 10px; font-size: 2.2em; }}
+                    .meta-info {{ display: flex; justify-content: center; gap: 40px; margin-top: 20px; color: #555; font-size: 1.1em; }}
+                    .meta-item strong {{ color: {BRAND_NAVY}; display: block; margin-bottom: 5px;}}
+                    .description {{ text-align: left; background: #f8fbfd; border-left: 4px solid {BRAND_LIGHT_BLUE}; padding: 20px; margin-top: 30px; border-radius: 0 8px 8px 0; font-size: 1.05em; line-height: 1.6;}}
+                    .card {{ background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 40px; overflow-x: auto; }}
+                    .card h2 {{ color: {BRAND_NAVY}; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }}
+                    .summary-table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 20px; }}
+                    .summary-table th {{ background: {BRAND_NAVY}; color: white; padding: 12px 10px; text-align: left; font-weight: 600; }}
+                    .summary-table td {{ padding: 10px; border-bottom: 1px solid #eee; }}
+                    .summary-table tr:nth-child(even) {{ background-color: #fcfcfc; }}
+                    .summary-table tr:hover {{ background-color: #f1f5f9; }}
+                </style>
+            </head>
+            <body>
+                <div class="report-container">
+                    <div class="header">
+                        <img src="https://22283886.fs1.hubspotusercontent-na1.net/hubfs/22283886/Caravan%20Drip%20Images/FLY_MasterLogo_CMYK_PMS541.png" alt="flyExclusive Logo">
+                        <h1>{rep_title}</h1>
+                        <div class="meta-info">
+                            {f'<div class="meta-item"><strong>Presented For</strong>{rep_presented_for}</div>' if rep_presented_for else ''}
+                            {f'<div class="meta-item"><strong>Prepared By</strong>{rep_created_by}</div>' if rep_created_by else ''}
+                            <div class="meta-item"><strong>Date</strong>{rep_date.strftime('%B %d, %Y')}</div>
+                        </div>
+                        {f'<div class="description"><strong>Key Findings & Overview</strong>{desc_html}</div>' if desc_html else ''}
+                    </div>
+                    
+                    <div class="card">
+                        <h2>Unified Program Comparison</h2>
+                        {rep_tbl_html}
+                    </div>
+                    
+                    <div class="card">
+                        <h2>Annual Cost Breakdown</h2>
+                        {stack_html_div}
+                    </div>
+                    
+                    <div class="card">
+                        <h2>Effective Hourly Rates Sensitivity</h2>
+                        {heat_html_div}
+                    </div>
+                </div>
+            </body>
+            </html>"""
+            
             st.download_button("Download Analysis Report", html.encode('utf-8'), "aviation_report.html", "text/html")
-            st.success("Report Ready!")
+            st.success("Report Ready! Click above to download.")
